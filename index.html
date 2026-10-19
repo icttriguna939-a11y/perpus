@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="E-Perpus SMA Triguna 1956 Jakarta — katalog digital, e-book, dan layanan sirkulasi perpustakaan sekolah.">
+  <title>E-Perpus SMA Triguna 1956</title>
+  <meta name="theme-color" content="#9E3C26">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <script>
+    // Ikon tab sekolah yang tersimpan dari kunjungan sebelumnya
+    try { var f = localStorage.getItem('eperpus_favicon'); if (f && /^https:\/\//.test(f)) document.querySelector('link[rel="icon"]').href = f; } catch (e) {}
+  </script>
+
+  <!-- Font: Plus Jakarta Sans (UI) + JetBrains Mono (kode/barcode) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <!-- Bootstrap 5 + Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ═══ Layar Memuat Awal ═══ -->
+  <div id="bootScreen" class="boot-screen" role="status" aria-live="polite">
+    <div class="boot-logo" id="bootLogo"><i class="bi bi-book-half"></i></div>
+    <script>
+      // Kunjungan berikutnya: pakai logo yang tersimpan di perangkat bila server belum menyisipkannya
+      (function () {
+        try {
+          var el = document.getElementById('bootLogo'), d = JSON.parse(localStorage.getItem('eperpus_logoBoot') || 'null');
+          if (el && !el.querySelector('img') && d && /^(data:image\/|https:\/\/)/.test(d)) {
+            el.className += ' has-logo';
+            el.innerHTML = '';
+            var img = document.createElement('img'); img.src = d; img.alt = 'Logo sekolah'; el.appendChild(img);
+          }
+        } catch (e) { /* abaikan */ }
+      })();
+    </script>
+    <div class="boot-title">E-Perpus</div>
+    <div class="boot-sub">Menyiapkan rak buku digital…</div>
+    <div class="boot-bar"><span></span></div>
+  </div>
+
+  <div id="appShell" class="app-shell">
+
+    <!-- ═══ Sidebar Admin (desktop) ═══ -->
+    <aside id="sidebar" class="sidebar" aria-label="Menu pustakawan">
+      <div class="sidebar-brand">
+        <div class="brand-mark" data-logo><i class="bi bi-book-half"></i></div>
+        <div>
+          <div class="brand-eyebrow">Admin Pustakawan</div>
+          <div class="brand-name">E-Perpus</div>
+        </div>
+      </div>
+      <nav id="sidebarNav" class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <button type="button" class="side-link" onclick="toggleTema()">
+          <i class="bi bi-moon-stars" data-theme-icon></i><span>Mode gelap / terang</span>
+        </button>
+        <button type="button" class="side-link text-danger-soft" onclick="keluar()">
+          <i class="bi bi-box-arrow-left"></i><span>Keluar</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="shell-main">
+      <!-- ═══ Header ═══ -->
+      <header id="topbar" class="topbar">
+        <button type="button" class="brand" onclick="navigateTo(beranda())" aria-label="Ke beranda">
+          <span class="brand-mark" data-logo><i class="bi bi-book-half"></i></span>
+          <span class="brand-text">
+            <span class="brand-eyebrow" id="brandSekolah">SMA Triguna 1956</span>
+            <span class="brand-name" id="brandJudul">E-Perpus</span>
+          </span>
+        </button>
+
+        <nav id="topNav" class="top-nav" aria-label="Menu utama"></nav>
+
+        <div class="top-actions">
+          <button type="button" class="icon-btn" onclick="toggleTema()" aria-label="Ganti mode gelap/terang">
+            <i class="bi bi-moon-stars" data-theme-icon></i>
+          </button>
+          <button type="button" class="icon-btn position-relative" id="btnNotif" onclick="bukaNotifikasi()" aria-label="Notifikasi">
+            <i class="bi bi-bell"></i><span class="notif-dot d-none" id="notifDot"></span>
+          </button>
+          <button type="button" class="btn-pill btn-primary-soft d-none d-lg-inline-flex" id="btnMasukDesktop" onclick="navigateTo('login')">
+            Masuk Anggota <i class="bi bi-person-circle"></i>
+          </button>
+          <button type="button" class="avatar-btn" id="btnAkun" onclick="navigateTo(AppState.user ? (AppState.user.role === 'admin' ? 'pengaturan' : 'akun') : 'login')" aria-label="Akun">
+            <i class="bi bi-person-fill"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- ═══ KONTAINER UTAMA SPA — semua halaman dirender di sini ═══ -->
+      <main id="main" class="main" tabindex="-1">
+        <div id="app-container" class="app-container"></div>
+      </main>
+    </div>
+
+    <!-- ═══ Bottom Navigation (HP) ═══ -->
+    <nav id="bottomNav" class="bottom-nav" aria-label="Navigasi bawah"></nav>
+  </div>
+
+  <!-- ═══ Modal Serbaguna ═══ -->
+  <div class="modal fade" id="modalUmum" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" id="modalUmumDialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalUmumJudul">Judul</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+        </div>
+        <div class="modal-body" id="modalUmumIsi"></div>
+        <div class="modal-footer" id="modalUmumKaki"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Modal Pratinjau Berkas (Tutup + Unduh) ═══ -->
+  <div class="modal fade" id="modalPratinjau" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="pratinjauJudul">Pratinjau</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+        </div>
+        <div class="modal-body p-0" id="pratinjauIsi"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn-pill btn-ghost" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i> Tutup</button>
+          <a id="pratinjauUnduh" class="btn-pill btn-primary" download><i class="bi bi-download"></i> Unduh</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Pembaca E-Book Layar Penuh ═══ -->
+  <div id="reader" class="reader" aria-hidden="true" role="dialog" aria-label="Pembaca e-book">
+    <div class="reader-bar">
+      <button type="button" class="icon-btn" onclick="tutupReader()" aria-label="Tutup pembaca"><i class="bi bi-arrow-left"></i></button>
+      <div class="reader-title">
+        <div id="readerJudul" class="text-truncate">Judul</div>
+        <div id="readerPenulis" class="reader-sub text-truncate"></div>
+      </div>
+      <div class="reader-tools">
+        <button type="button" class="icon-btn" onclick="readerZoom(-1)" aria-label="Perkecil"><i class="bi bi-zoom-out"></i></button>
+        <span id="readerZoomLabel" class="reader-zoom">100%</span>
+        <button type="button" class="icon-btn" onclick="readerZoom(1)" aria-label="Perbesar"><i class="bi bi-zoom-in"></i></button>
+        <button type="button" class="icon-btn d-none d-sm-inline-flex" onclick="readerLayarPenuh()" aria-label="Layar penuh"><i class="bi bi-fullscreen"></i></button>
+      </div>
+    </div>
+    <div class="reader-progress"><span id="readerProgressBar"></span></div>
+    <div id="readerStage" class="reader-stage">
+      <canvas id="readerCanvas"></canvas>
+      <div id="readerMemuat" class="reader-loading">
+        <div class="spinner-ring"></div>
+        <div id="readerMemuatTeks">Membuka e-book…</div>
+      </div>
+    </div>
+    <div class="reader-nav">
+      <button type="button" class="btn-pill btn-ghost" onclick="readerHal(-1)" aria-label="Halaman sebelumnya"><i class="bi bi-chevron-left"></i> <span class="d-none d-sm-inline">Sebelumnya</span></button>
+      <div class="reader-page">
+        <input id="readerInputHal" type="number" min="1" inputmode="numeric" aria-label="Nomor halaman" onchange="readerKeHal(this.value)">
+        <span>/ <b id="readerTotal">-</b></span>
+      </div>
+      <button type="button" class="btn-pill btn-primary" onclick="readerHal(1)" aria-label="Halaman berikutnya"><span class="d-none d-sm-inline">Berikutnya</span> <i class="bi bi-chevron-right"></i></button>
+    </div>
+  </div>
+
+  <!-- ═══ Area Cetak (kartu anggota, label punggung) ═══ -->
+  <div id="printArea" class="print-area" aria-hidden="true"></div>
+
+  <!-- ═══ Toast ═══ -->
+  <div id="toastWrap" class="toast-wrap" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- Pustaka utama (pustaka berat dimuat saat dibutuhkan) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+
+  <script src="js/config.js"></script>
+  <script src="js/inti.js"></script>
+  <script src="js/publik.js"></script>
+  <script src="js/anggota.js"></script>
+  <script src="js/sirkulasi.js"></script>
+  <script src="js/kelola.js"></script>
+  <script src="js/paket.js"></script>
+</body>
+</html>
